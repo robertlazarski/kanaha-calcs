@@ -21,6 +21,7 @@ It serves them over HTTP/2 with mutual TLS. A WebView front end adds fifteen tex
 | Data | Public-domain prices (2008–2018), Federal Reserve FX rates, ACWI monthly returns. Load your own CSV through the file picker |
 | Security | HTTPS + mTLS; each phone mints its own key and must be provisioned before it serves |
 | AI integration | MCP (Model Context Protocol), the same 7 operations as tools |
+| Voice | Spoken requests from [Kanaha Audio](https://github.com/robertlazarski/kanaha-audio) on a second phone, phone to phone over mTLS |
 | Discovery | mDNS/DNS-SD (`_https._tcp`, `api=kanaha-calcs`) |
 | License | **Apache 2.0** (all dependencies permissive) |
 
@@ -98,6 +99,50 @@ Launch the app, or start the server headless with the screen off:
 ```bash
 adb shell am start-foreground-service -a org.kanaha.calcs.START_SERVER -n org.kanaha.calcs/.CalcsService
 ```
+
+## Voice: Kanaha Audio as a Client
+
+[Kanaha Audio](https://github.com/robertlazarski/kanaha-audio), on a second phone, can drive Kanaha Calcs by voice:
+
+1. You say a request to the audio phone.
+2. whisper.cpp (`tiny.en`) recognises it.
+3. A fixed grammar in C turns the words into a request. There is no language model in the path, which is why it can promise to refuse a third decimal.
+4. The phone reads the request back with flite.
+5. It calls this server phone to phone, with Axis2/C's HTTP/2 JSON client over mutual TLS.
+6. It speaks the answer.
+
+No laptop sits in the path of a calculation.
+
+```
+  you speak ──► AUDIO PHONE (Kanaha Audio)                    CALCS PHONE (Kanaha Calcs, :8444)
+                whisper.cpp hears the phrase
+                fixed grammar → a request, read back aloud
+                Axis2/C HTTP/2 JSON client ══ mTLS, HTTP/2 ══►  covarianceFromCsv  (the only file read)
+                                                                portfolioVariance / composeCovariance /
+                speaks the answer          ◄══════════════════  monteCarlo
+```
+
+The server is stateless. The audio phone calls `listCsvFiles` once, at startup, to learn which file carries which tickers. After that, `covarianceFromCsv` is the only call that reads a price file, and the audio phone keeps the volatilities it returned. So a follow-up such as "at correlation point eight" sends a chosen correlation to `composeCovariance` and opens no file at all.
+
+Measured on a Pixel 10 Pro XL running a clean install of this repository's build, with the public 2008–2018 data and the example book. The answers come back word for word as below:
+
+| Said | Calls | Heard back |
+|---|---|---|
+| "Portfolio variance on the book." | `covarianceFromCsv`, `portfolioVariance` | "The book comes out at 23.39 percent volatility, against a weighted average of 31.0, so diversification is taking 25 percent off." |
+| "Portfolio variance on the book at correlation point eight." | `composeCovariance`, `portfolioVariance` | "At a correlation of 0.80, the book comes out at 28.49 percent volatility, against a weighted average of 31.0." |
+| "Simulate the book forward a year." | `covarianceFromCsv`, `monteCarlo` | "Simulated a year forward, the book has a 99 percent value at risk of 381,898 on a million, with 59 percent of paths in profit." |
+| "Simulate the book at correlation point eight." | `composeCovariance`, `monteCarlo` | "At a correlation of 0.80, a year forward, the book has a 99 percent value at risk of 456,740 on a million." |
+| "Same book, correlations at point eight five seven." | none | "I heard a correlation of 0.857, three decimals. I only take two from speech, because a third digit is more likely a mishearing than an intention. Say it again with two." |
+
+Each phrase is read back in full before it runs: the book's five tickers, the weights and the data. "The book" is a name defined in a books file. It shortens what a person has to say, never what the answer reports. The audio phone sends the simulation a fixed seed (12345), so the same request gives the same answer to the dollar.
+
+To set it up, use Kanaha Audio's [`tools/kanaha-books.example.json`](https://github.com/robertlazarski/kanaha-audio/blob/main/tools/kanaha-books.example.json). It defines one book on the public data, MSFT, AAPL, AMZN, JPM and JNJ at equal weights. Point the audio phone at the calcs phone, which `kanaha-voice-setup.sh` finds by mDNS:
+
+```bash
+cd kanaha-audio && tools/kanaha-voice-setup.sh --serial <audio phone adb serial> --books tools/kanaha-books.example.json
+```
+
+The calcs certificate must carry the name the audio phone checks, `calcs.local` by default. To try the same chain from a laptop, without the microphone, use Kanaha Audio's `tests/voice/kanaha_voice_cli`.
 
 ## MCP Support
 
