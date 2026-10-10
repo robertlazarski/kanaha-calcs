@@ -1,0 +1,112 @@
+Kanaha Calcs
+Copyright 2025-2026 Robert Lazarski
+
+This product includes software developed by:
+
+=============================================================================
+Apache Axis2/C
+=============================================================================
+Copyright (C) The Apache Software Foundation
+https://axis.apache.org/axis2/c/
+License: Apache License 2.0
+
+Kanaha Calcs serves Apache Axis2/C's financial benchmark sample
+(FinancialBenchmarkService), compiled unchanged from the Axis2/C source
+tree, as its calculation engine over HTTP/2 JSON-RPC.
+
+=============================================================================
+Apache HTTP Server (httpd)
+=============================================================================
+Copyright (C) The Apache Software Foundation
+https://httpd.apache.org/
+License: Apache License 2.0
+
+Kanaha Calcs uses Apache httpd as its HTTP/2 server, cross-compiled
+for Android.
+
+=============================================================================
+Apache Portable Runtime (APR)
+=============================================================================
+Copyright (C) The Apache Software Foundation
+https://apr.apache.org/
+License: Apache License 2.0
+
+=============================================================================
+Apache HttpComponents (HttpClient 5, HttpCore 5)
+=============================================================================
+Copyright (C) The Apache Software Foundation
+https://hc.apache.org/
+License: Apache License 2.0
+
+The app's Java bridge uses HttpClient 5 to call the on-device service
+over HTTP/2.
+
+=============================================================================
+OpenSSL
+=============================================================================
+Copyright (C) 1998-2024 The OpenSSL Project
+https://www.openssl.org/
+License: Apache License 2.0
+
+=============================================================================
+nghttp2
+=============================================================================
+Copyright (C) 2012-2024 Tatsuhiro Tsujikawa
+https://nghttp2.org/
+License: MIT License
+
+=============================================================================
+json-c
+=============================================================================
+Copyright (C) 2009-2012 Eric Haszlakiewicz
+https://github.com/json-c/json-c
+License: MIT License
+
+=============================================================================
+Expat XML Parser
+=============================================================================
+Copyright (C) 1998-2000 Thai Open Source Software Center Ltd
+https://libexpat.github.io/
+License: MIT License
+
+=============================================================================
+PCRE2
+=============================================================================
+Copyright (c) 1997-2024 University of Cambridge
+https://github.com/PCRE2Project/pcre2
+License: BSD 3-Clause License (with the PCRE2 exception for binaries)
+
+=============================================================================
+Bouncy Castle
+=============================================================================
+Copyright (c) The Legion of the Bouncy Castle Inc.
+https://www.bouncycastle.org/
+License: MIT License (Bouncy Castle Licence)
+
+Kanaha Calcs uses Bouncy Castle to generate the device key pair and
+certificate signing request on the phone.
+
+=============================================================================
+Chart.js
+=============================================================================
+Copyright (c) 2024 Chart.js Contributors
+https://www.chartjs.org/
+License: MIT License
+
+Bundled as assets/lib/chart.min.js (v4.4.7) for the app's charts.
+
+=============================================================================
+Bundled data
+=============================================================================
+Quandl WIKI EOD Stock Prices -- dedicated to the public domain by its
+publisher; see data/DATA_LICENSE.txt.
+
+Federal Reserve Board H.10 Foreign Exchange Rates -- public domain; source:
+Board of Governors of the Federal Reserve System. See
+data/FED_H10_LICENSE.txt.
+
+iShares MSCI ACWI ETF monthly total returns -- figures taken from the
+fund's public SEC EDGAR NPORT-P filings. No MSCI index data is included.
+
+S&P 500 ticker list -- compiled from Wikipedia's "List of S&P 500
+companies".

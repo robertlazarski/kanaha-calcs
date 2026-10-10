@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Local configuration
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# Android Studio
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing
+*.keystore
+*.jks
+
+# Build backup artifacts
+*.bak
+*.bak.*
+
+# Cross-compiled native library (Apache/Axis2/C service): built by
+# build-android.sh at release time, not tracked. Tracking the ~10 MB binary
+# let it silently drift from the source it is compiled from.
+*.so

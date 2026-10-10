@@ -1,0 +1,20 @@
+Federal Reserve Board H.10 Foreign Exchange Rates -- license
+==============================================================
+
+The FX series in fed_h10_fx_10yr.csv were downloaded from the Board of
+Governors of the Federal Reserve System, H.10 release:
+
+    https://www.federalreserve.gov/datadownload/choose.aspx?rel=h10
+
+They were taken from the Board directly, not from FRED, whose terms add
+restrictions of their own.
+
+The Board's website disclaimer (https://www.federalreserve.gov/disclaimer.htm),
+section "Copyright/trademark", verbatim as checked on 2026-10-09:
+
+    Unless otherwise indicated, information on Board's website is in the
+    public domain and may be copied and distributed without permission.
+    Please cite to the Board as the source of the information.
+
+Source: Board of Governors of the Federal Reserve System, H.10 Foreign
+Exchange Rates.

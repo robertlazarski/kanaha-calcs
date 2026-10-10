@@ -1,0 +1,66 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "org.kanaha.calcs"
+        minSdkVersion 28
+        targetSdkVersion 35
+        versionCode 1
+        versionName "1.0.0"
+
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE',
+                         'META-INF/LICENSE.txt', 'META-INF/NOTICE',
+                         'META-INF/NOTICE.txt',
+                         // BouncyCastle jdk18on multi-release jars each carry this;
+                         // Android ignores MR jars, so dropping the duplicate is safe.
+                         'META-INF/versions/9/OSGI-INF/MANIFEST.MF']
+        }
+        // Kanaha runs libkanaha_calcs_httpd.so and libkanaha_mcp.so as
+        // executables, not as loaded libraries, so each must be a real file
+        // under nativeLibraryDir. Uncompressed packaging (the AGP 8 default)
+        // leaves them mmap'd inside the APK and that dir empty.
+        // Do not remove: CalcsService exec()s / deploys these paths directly.
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    namespace 'org.kanaha.calcs'
+}
+
+dependencies {
+    // Apache HttpComponents 5 — HTTP/2 async client for Axis2/C localhost calls.
+    // Preferred over OkHttp because kanaha projects use Apache httpd server-side
+    // and Robert is an Apache Axis2 committer.
+    // The ASYNC client is required — HC5 classic only does HTTP/1.1.
+    // HTTP/2 is required because Axis2/C JSON processing only works over HTTP/2.
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.4.3'
+    implementation 'org.apache.httpcomponents.core5:httpcore5-h2:5.3.4'
+
+    // BouncyCastle: on-device keypair + PKCS#10 CSR generation (milestone B).
+    // The device mints its own key and CSR; the Kanaha CA (off-device) signs it.
+    // jdk18on is the current artifact line (jdk15on was retired after 1.70).
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.84'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.84'
+}

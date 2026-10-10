@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Kanaha Calcs - Axis2/C Configuration
+  Financial Benchmark Service. TLS + mTLS are enforced by the Apache
+  mod_ssl layer (SSLVerifyClient require); this file is engine config only.
+
+  Note: Message receivers are statically linked into httpd,
+  so we don't specify class= attributes to avoid dlopen.
+-->
+<axisconfig name="Kanaha/Axis2C">
+    <!-- Enable REST/JSON mode -->
+    <parameter name="enableREST" locked="false">true</parameter>
+
+    <!-- Service repository path (relative to Axis2RepoPath) -->
+    <parameter name="ServicesDirectory">services</parameter>
+
+    <!-- Module repository path (relative) -->
+    <parameter name="ModulesDirectory">modules</parameter>
+
+    <!-- Transport Receivers (statically linked) -->
+    <transportReceiver name="http">
+        <parameter name="port" locked="false">8444</parameter>
+        <parameter name="exposeHeaders" locked="true">false</parameter>
+    </transportReceiver>
+
+    <!-- Transport Senders (statically linked) -->
+    <transportSender name="http">
+        <parameter name="PROTOCOL" locked="false">HTTP/1.1</parameter>
+        <parameter name="xml-declaration" insert="false"/>
+    </transportSender>
+
+    <!-- Phases Configuration -->
+    <phaseOrder type="InFlow">
+        <phase name="Transport"/>
+        <phase name="Addressing"/>
+        <phase name="Security"/>
+        <phase name="PreDispatch"/>
+        <phase name="Dispatch"/>
+        <phase name="PostDispatch"/>
+    </phaseOrder>
+
+    <phaseOrder type="OutFlow">
+        <phase name="MessageOut"/>
+        <phase name="Security"/>
+        <phase name="Transport"/>
+    </phaseOrder>
+
+    <phaseOrder type="InFaultFlow">
+        <phase name="Transport"/>
+        <phase name="Addressing"/>
+        <phase name="PreDispatch"/>
+        <phase name="Dispatch"/>
+        <phase name="PostDispatch"/>
+    </phaseOrder>
+
+    <phaseOrder type="OutFaultFlow">
+        <phase name="MessageOut"/>
+        <phase name="Transport"/>
+    </phaseOrder>
+</axisconfig>

@@ -1,0 +1,26 @@
+Source: Quandl WIKI EOD Stock Prices
+URL: https://data.nasdaq.com/data/WIKI-wiki-eod-stock-prices
+Owner: Nasdaq, Inc. (acquired Quandl in 2018)
+
+License (verbatim from dataset metadata):
+
+    "This data is in the public domain. You may copy, distribute,
+     disseminate or include the data in other products for commercial
+     and/or noncommercial purposes. This data is part of Quandl's
+     Wiki initiative to get financial data permanently into the
+     public domain."
+
+Tickers: MSFT, AAPL, AMZN, JPM, JNJ
+Column: Adj. Close (split- and dividend-adjusted closing price)
+Period: March 2008 - March 2018 (10 years, ~2,500 trading days)
+Dataset last updated: March 27, 2018 (discontinued April 11, 2018)
+
+Corporate action adjustment:
+  Adj. Close retroactively modifies all historical prices to account
+  for stock splits and dividend payments, ensuring return continuity.
+  Notable events in this window:
+    - AAPL: 7-for-1 split, June 9, 2014
+    - MSFT: Quarterly dividends (~$0.20-$0.42/share)
+    - JPM:  Quarterly dividends
+    - JNJ:  Quarterly dividends (Dividend King, 50+ years of increases)
+    - AMZN: No splits or dividends in this period

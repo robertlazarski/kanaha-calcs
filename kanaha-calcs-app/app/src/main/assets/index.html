@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Kanaha Calcs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-header">
+    <h1>Kanaha Calcs</h1>
+    <div class="subtitle">Financial Math &mdash; First Principles</div>
+</div>
+
+<!-- Data Bar — Load CSV button only, status shown in Loaded Data card -->
+<div class="data-bar">
+    <span id="data-status"></span>
+    <button class="load-csv-btn" onclick="androidLoadCSV()">Load CSV</button>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+    <button class="tab-btn active" data-tab="calculate" onclick="switchTab('calculate')">Calculate</button>
+    <button class="tab-btn" data-tab="fund" onclick="switchTab('fund')">Fund</button>
+    <button class="tab-btn" data-tab="glossary" onclick="switchTab('glossary')">Glossary</button>
+</div>
+
+<!-- Calculate Tab -->
+<div id="tab-calculate" class="tab-content active">
+
+    <!-- Data Context -->
+    <div class="card data-context-card">
+        <h3>Loaded Data</h3>
+        <div id="data-context">
+            <div class="data-context-detail">Loading bundled dataset...</div>
+        </div>
+    </div>
+
+    <!-- #1 Kelly Fraction -->
+    <div class="card">
+        <h3>Kelly Fraction</h3>
+        <div class="calc-number">#1 &mdash; Optimal bet sizing</div>
+        <div class="card-hint">You believe a stock has a 60% chance of going up 2x what it could lose. How much of your portfolio should you allocate? Try changing the win probability to 0.5 &mdash; the answer drops dramatically.</div>
+        <div class="input-group">
+            <label>Win probability (0 to 1)</label>
+            <input type="number" id="kelly-p" step="0.01" min="0" max="1" value="0.6">
+        </div>
+        <div class="input-group">
+            <label>Win/loss ratio (reward per dollar risked)</label>
+            <input type="number" id="kelly-b" step="0.1" min="0" value="2.0">
+        </div>
+        <button class="calc-btn" onclick="calcKellyFraction()">Calculate</button>
+        <div id="kelly-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">f* = (b &times; p &minus; q) / b</div>
+                Kelly, J.L., Jr. (1956). &ldquo;A New Interpretation of Information Rate.&rdquo;
+                <em>Bell System Technical Journal</em>, 35(4): 917&ndash;926.
+                <br><br>
+                The Kelly criterion determines the optimal fraction of capital to
+                wager when the odds are in your favor. A result of 0.25 means
+                bet 25% of your bankroll. Negative values mean the bet has
+                negative expected value &mdash; don&rsquo;t take it.
+            </div>
+        </details>
+    </div>
+
+    <!-- #2 Kelly Odds -->
+    <div class="card">
+        <h3>Kelly Odds (Payoff Ratio)</h3>
+        <div class="calc-number">#2 &mdash; Reward-to-risk ratio</div>
+        <div class="card-hint">If your analyst says a stock could go to $150 (from $100) or drop to $80, that&rsquo;s $50 reward vs $20 risk. This ratio is the &ldquo;b&rdquo; input for Kelly above.</div>
+        <div class="input-group">
+            <label>Expected reward ($)</label>
+            <input type="number" id="odds-reward" step="0.01" value="50">
+        </div>
+        <div class="input-group">
+            <label>Expected risk ($)</label>
+            <input type="number" id="odds-risk" step="0.01" value="20">
+        </div>
+        <button class="calc-btn" onclick="calcKellyOdds()">Calculate</button>
+        <div id="odds-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">odds = |reward| / |risk|</div>
+                Kelly, J.L., Jr. (1956). Section III.
+                <em>Bell System Technical Journal</em>, 35(4): 917&ndash;926.
+                <br><br>
+                The payoff ratio is the &ldquo;b&rdquo; term in the Kelly formula.
+                A ratio of 2.5:1 means you stand to gain 2.5x what you risk.
+                This is one of the two inputs needed for Kelly sizing.
+            </div>
+        </details>
+    </div>
+
+    <!-- #3 Sharpe Ratio -->
+    <div class="card">
+        <h3>Sharpe Ratio</h3>
+        <div class="calc-number">#3 &mdash; Risk-adjusted return</div>
+        <div class="card-hint">A fund returned 12% with 15% volatility while T-bills paid 4%. Is that good? Try raising volatility to 30% &mdash; the same return looks much worse per unit of risk.</div>
+        <div class="input-group">
+            <label>Portfolio return (%)</label>
+            <input type="number" id="sharpe-ret" step="0.1" value="12">
+        </div>
+        <div class="input-group">
+            <label>Risk-free rate (%)</label>
+            <input type="number" id="sharpe-rf" step="0.1" value="4">
+        </div>
+        <div class="input-group">
+            <label>Portfolio volatility (%)</label>
+            <input type="number" id="sharpe-vol" step="0.1" value="15">
+        </div>
+        <button class="calc-btn" onclick="calcSharpe()">Calculate</button>
+        <div id="sharpe-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">SR = (R<sub>p</sub> &minus; R<sub>f</sub>) / &sigma;<sub>p</sub></div>
+                Sharpe, W.F. (1966). &ldquo;Mutual Fund Performance.&rdquo;
+                <em>The Journal of Business</em>, 39(1): 119&ndash;138.
+                <br><br>
+                The Sharpe ratio measures excess return per unit of risk.
+                SR &gt; 1.0 is generally considered good; SR &gt; 2.0 is
+                excellent. A negative Sharpe means the portfolio
+                underperforms the risk-free rate.
+            </div>
+        </details>
+    </div>
+
+    <!-- #4 Normal Distribution Probability -->
+    <div class="card">
+        <h3>Normal Distribution Probability</h3>
+        <div class="calc-number">#4 &mdash; Probability of a return</div>
+        <div class="card-hint">If a stock has 20% annual volatility, what&rsquo;s the probability of losing 10% or more? Try changing to -30% &mdash; the probability drops to ~7%. These are the tails that VaR measures.</div>
+        <div class="input-group">
+            <label>Return (%)</label>
+            <input type="number" id="norm-return" step="0.1" value="-10">
+        </div>
+        <div class="input-group">
+            <label>Volatility (%)</label>
+            <input type="number" id="norm-vol" step="0.1" value="20">
+        </div>
+        <button class="calc-btn" onclick="calcNormalCDF()">Calculate</button>
+        <div id="norm-result" class="result"></div>
+        <div id="norm-z" class="calc-info"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">&Phi;(z) where z = return / volatility</div>
+                Abramowitz, M. &amp; Stegun, I.A. (1964). <em>Handbook of Mathematical
+                Functions</em>. NBS Applied Mathematics Series 55, &sect;26.2.
+                <br><br>
+                Computes the probability that a normally distributed return
+                falls below the given value. Uses the Abramowitz &amp; Stegun
+                rational approximation (formula 26.2.17) &mdash; no lookup table.
+            </div>
+        </details>
+    </div>
+
+    <!-- #5 Percent Change -->
+    <div class="card">
+        <h3>Percent Change</h3>
+        <div class="calc-number">#5 &mdash; Simple return</div>
+        <div class="card-hint">MSFT went from $44 in 2016 to $414 today. How much did it return? Try entering any two prices to see the gain or loss.</div>
+        <div class="input-group">
+            <label>Old value</label>
+            <input type="number" id="pct-old" step="0.01" value="44">
+        </div>
+        <div class="input-group">
+            <label>New value</label>
+            <input type="number" id="pct-new" step="0.01" value="414">
+        </div>
+        <button class="calc-btn" onclick="calcPercentChange()">Calculate</button>
+        <div id="pct-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">(new &minus; old) / old &times; 100</div>
+                Fibonacci (1202). <em>Liber Abaci</em>.
+                <br><br>
+                The most fundamental calculation in finance. Every return,
+                every P&amp;L, every performance number starts here.
+            </div>
+        </details>
+    </div>
+
+    <!-- #6 Median Daily Return -->
+    <div class="card">
+        <h3>Median Daily Return</h3>
+        <div class="calc-number">#6 &mdash; Central tendency (data-driven)</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="median-ticker" class="ticker-select"></select>
+        </div>
+        <button class="calc-btn" onclick="calcMedianReturn()">Calculate</button>
+        <div id="median-result" class="result"></div>
+        <div id="median-info" class="calc-info"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">Sort values, take middle</div>
+                Galton, F. (1881). &ldquo;Report of the Anthropometric Committee.&rdquo;
+                <em>Report of the British Association for the Advancement of Science</em>,
+                51: 225&ndash;272.
+                <br><br>
+                The median is more robust than the mean against outliers
+                (e.g., flash crashes or gap-up earnings).
+            </div>
+        </details>
+    </div>
+
+    <!-- #7 Covariance Matrix -->
+    <div class="card">
+        <h3>Covariance Matrix</h3>
+        <div class="calc-number">#7 &mdash; Co-movement of returns (data-driven)</div>
+        <div class="input-group">
+            <label>Select tickers</label>
+            <div id="cov-tickers" class="ticker-checkboxes"></div>
+        </div>
+        <button class="calc-btn" onclick="calcCovariance()">Calculate</button>
+        <div id="cov-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">cov(i,j) = &Sigma;(r<sub>i</sub> &minus; &mu;<sub>i</sub>)(r<sub>j</sub> &minus; &mu;<sub>j</sub>) / (n&minus;1) &times; 252</div>
+                Pearson, K. (1896). &ldquo;Mathematical Contributions to the Theory of
+                Evolution. III.&rdquo; <em>Philosophical Transactions of the Royal Society A</em>,
+                187: 253&ndash;318.
+                <br><br>
+                Log returns are computed from adjusted close prices, then
+                annualized by multiplying by 252 (trading days per year).
+                The correlation matrix is derived: &rho;(i,j) = cov(i,j) / (&sigma;<sub>i</sub>&sigma;<sub>j</sub>).
+            </div>
+        </details>
+    </div>
+
+    <!-- #11 Maximum Drawdown -->
+    <div class="card">
+        <h3>Maximum Drawdown</h3>
+        <div class="calc-number">#11 &mdash; Worst peak-to-trough decline (data-driven)</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="dd-ticker" class="ticker-select"></select>
+        </div>
+        <button class="calc-btn" onclick="calcMaxDrawdown()">Calculate</button>
+        <div id="dd-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">MaxDD = min((P<sub>t</sub> &minus; P<sub>peak</sub>) / P<sub>peak</sub>)</div>
+                Grossman, S.J. &amp; Zhou, Z. (1993). &ldquo;Optimal Investment Strategies
+                for Controlling Drawdowns.&rdquo; <em>Mathematical Finance</em>, 3(3): 241&ndash;276.
+                <br><br>
+                The largest percentage decline from a peak. The bundled 2008&ndash;2018
+                data captures the financial crisis &mdash; JPM&rsquo;s max drawdown
+                is a dramatic educational example.
+            </div>
+        </details>
+    </div>
+
+    <!-- #13 Dividend Yield -->
+    <div class="card">
+        <h3>Dividend Yield</h3>
+        <div class="calc-number">#13 &mdash; Trailing yield (data-driven)</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="divy-ticker" class="ticker-select"></select>
+        </div>
+        <button class="calc-btn" onclick="calcDividendYield()">Calculate</button>
+        <div id="divy-result" class="result"></div>
+        <div id="divy-info" class="calc-info"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">yield = &Sigma;(trailing 4 dividends) / price &times; 100</div>
+                Williams, J.B. (1938). <em>The Theory of Investment Value</em>.
+                Harvard University Press.
+                <br><br>
+                JNJ is a Dividend King (increasing dividends every year).
+                JPM cut its dividend during the 2008 crisis then rebuilt it.
+                AAPL started paying in 2012. AMZN pays nothing.
+            </div>
+        </details>
+    </div>
+
+    <!-- Charts Section -->
+    <h2 class="section-header">Charts</h2>
+
+    <!-- Price History Chart -->
+    <div class="card">
+        <h3>Price History</h3>
+        <div class="calc-number">Adjusted close prices over time</div>
+        <div class="input-group">
+            <label>Select tickers</label>
+            <div id="price-tickers" class="ticker-checkboxes"></div>
+        </div>
+        <button class="calc-btn" onclick="renderPriceHistory()">Draw Chart</button>
+        <div class="chart-container">
+            <canvas id="chart-price-history"></canvas>
+        </div>
+    </div>
+
+    <!-- Drawdown Chart -->
+    <div class="card">
+        <h3>Drawdown</h3>
+        <div class="calc-number">Peak-to-trough decline over time</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="chart-dd-ticker" class="ticker-select"></select>
+        </div>
+        <button class="calc-btn" onclick="renderDrawdown()">Draw Chart</button>
+        <div class="chart-container">
+            <canvas id="chart-drawdown"></canvas>
+        </div>
+    </div>
+
+    <!-- Dividend Timeline -->
+    <div class="card">
+        <h3>Dividend Timeline</h3>
+        <div class="calc-number">Ex-dividend payments over time</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="chart-div-ticker" class="ticker-select"></select>
+        </div>
+        <button class="calc-btn" onclick="renderDividendTimeline()">Draw Chart</button>
+        <div class="chart-container">
+            <canvas id="chart-dividends"></canvas>
+        </div>
+    </div>
+
+    <!-- Volatility Bars -->
+    <div class="card">
+        <h3>Volatility Comparison</h3>
+        <div class="calc-number">Annualized volatility by ticker</div>
+        <button class="calc-btn" onclick="renderVolatilityBars()">Draw Chart</button>
+        <div class="chart-container">
+            <canvas id="chart-volatility"></canvas>
+        </div>
+    </div>
+
+    <!-- Correlation Heatmap -->
+    <div class="card">
+        <h3>Correlation Heatmap</h3>
+        <div class="calc-number">Pairwise correlation from log returns</div>
+        <button class="calc-btn" onclick="renderCorrelationHeatmap()">Draw Chart</button>
+        <div class="chart-container">
+            <canvas id="chart-correlation" width="350" height="250"></canvas>
+        </div>
+    </div>
+
+    <!-- Raw vs Adjusted -->
+    <div class="card">
+        <h3>Raw vs. Adjusted Close</h3>
+        <div class="calc-number">Shows split/dividend adjustment effects (e.g., AAPL 7:1)</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="chart-rawadj-ticker" class="ticker-select"></select>
+        </div>
+        <button class="calc-btn" onclick="renderRawVsAdjusted()">Draw Chart</button>
+        <div class="chart-container">
+            <canvas id="chart-raw-adj"></canvas>
+        </div>
+    </div>
+
+    <!-- Native Calcs Section -->
+    <h2 class="section-header">Native Calculations (Axis2/C)</h2>
+
+    <!-- #16 Portfolio Variance -->
+    <div class="card" id="card-pv">
+        <h3>Portfolio Variance</h3>
+        <div class="calc-number">#16 &mdash; w'&Sigma;w matrix computation (Axis2/C)</div>
+        <div class="input-group">
+            <label>Select tickers</label>
+            <div id="pv-tickers" class="ticker-checkboxes"></div>
+        </div>
+        <button class="calc-btn" onclick="calcPortfolioVariance()">Calculate</button>
+        <div id="pv-result" class="result"></div>
+        <div id="pv-info" class="calc-info"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">&sigma;&sup2;<sub>p</sub> = w' &times; &Sigma; &times; w</div>
+                Markowitz, H. (1952). &ldquo;Portfolio Selection.&rdquo;
+                <em>The Journal of Finance</em>, 7(1): 77&ndash;91.
+                <br><br>
+                Portfolio variance is computed via matrix multiplication of the
+                weight vector and the covariance matrix. Runs as native C code
+                for performance &mdash; 500-asset matrices in ~150 &mu;s.
+                <br><br>
+                <strong>See the math:</strong> The
+                <!-- Source links are pinned to a commit so the highlighted range
+                     cannot drift as the upstream file changes; move the SHA and
+                     the range together. -->
+                <a href="https://github.com/apache/axis-axis2-c-core/blob/91cad92f1333b9169f7ba7c037668efeae4bd2c6/samples/user_guide/financial-benchmark-service/src/financial_benchmark_service.c#L535-L549" style="color:var(--accent)">
+                C source code (the w&prime;&Sigma;w loop)</a> reads like a textbook &mdash; the nested loop
+                that computes &sigma;&sup2;<sub>p</sub> = &Sigma;<sub>i</sub>&Sigma;<sub>j</sub>
+                w<sub>i</sub>w<sub>j</sub>&sigma;<sub>ij</sub> is directly recognizable
+                from Markowitz (1952), even if you&rsquo;ve never written C.
+            </div>
+        </details>
+    </div>
+
+    <!-- #18 Scenario Analysis -->
+    <div class="card">
+        <h3>Scenario Analysis</h3>
+        <div class="calc-number">#18 &mdash; Expected value from probability-weighted outcomes</div>
+        <div class="input-group">
+            <label>Ticker (optional)</label>
+            <select id="scenario-ticker" class="ticker-select" onchange="updateScenarioCurrentPrice()"></select>
+        </div>
+        <div class="input-group">
+            <label>Current price ($)</label>
+            <input type="number" id="scenario-current-price" step="0.01" min="0.01" value="100" style="width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;outline:none">
+        </div>
+        <div class="table-scroll">
+            <table class="fund-table">
+                <thead>
+                    <tr>
+                        <th>Scenario</th>
+                        <th>Probability</th>
+                        <th>Value ($)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="scenario-rows"></tbody>
+            </table>
+        </div>
+        <div id="scenario-prob-status" class="calc-info"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="calc-btn" onclick="calcScenario()" style="flex:3">Calculate</button>
+            <button class="calc-btn" onclick="addScenarioRow()" style="flex:1;background:var(--bg-input);color:var(--text)">+ Row</button>
+        </div>
+        <div id="scenario-result" class="result"></div>
+        <div id="scenario-info" class="calc-info"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">EV = &Sigma;(p<sub>i</sub> &times; value<sub>i</sub>)</div>
+                Bernoulli, D. (1738). &ldquo;Specimen Theoriae Novae de Mensura Sortis.&rdquo;
+                Earlier: Huygens, C. (1657). <em>De Ratiociniis in Ludo Aleae</em>.
+                <br><br>
+                Assign probabilities to Bull/Base/Bear outcomes. The expected value
+                is the probability-weighted average.
+                <br><br>
+                <strong>See the math:</strong> The
+                <a href="https://github.com/apache/axis-axis2-c-core/blob/91cad92f1333b9169f7ba7c037668efeae4bd2c6/samples/user_guide/financial-benchmark-service/src/financial_benchmark_service.c#L1743-L1755" style="color:var(--accent)">
+                C source code (the scenario loop)</a> implements EV = &Sigma;p<sub>i</sub>&times;v<sub>i</sub>
+                with a hash table benchmark that compares O(n) linear scan vs O(1)
+                hash lookup for asset retrieval &mdash; the same performance question
+                that matters when a portfolio has 500+ positions.
+            </div>
+        </details>
+    </div>
+
+    <!-- #17 Monte Carlo VaR -->
+    <div class="card">
+        <h3>Monte Carlo VaR</h3>
+        <div class="calc-number">#17 &mdash; Value at Risk via simulation (Axis2/C)</div>
+        <div class="card-hint">Pick a stock, and the C engine simulates 10,000 possible
+            futures for the next year using its historical return and volatility.
+            The result tells you: &ldquo;In 95% of simulated years, this stock
+            did not lose more than $X.&rdquo; That dollar amount is the Value at Risk.
+            It runs as native C code on your phone &mdash; not JavaScript.</div>
+        <div class="input-group">
+            <label>Ticker</label>
+            <select id="mc-ticker" class="ticker-select"></select>
+        </div>
+        <div class="input-group">
+            <label>Volatility source</label>
+            <select id="mc-vol-source" style="width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none">
+                <option value="same" selected>Same ticker</option>
+                <optgroup id="mc-vol-tickers" label="Use another ticker's characteristics">
+                </optgroup>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>Date range</label>
+            <select id="mc-lookback" style="width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none" onchange="toggleMcDateRange()">
+                <option value="252">Last 1 year (252 days)</option>
+                <option value="756">Last 3 years (756 days)</option>
+                <option value="1260">Last 5 years (1,260 days)</option>
+                <option value="0" selected>All loaded data</option>
+                <option value="custom">Custom date range</option>
+            </select>
+        </div>
+        <div id="mc-date-range" style="display:none">
+            <div style="display:flex;gap:10px;margin-top:4px">
+                <div style="flex:1">
+                    <label style="font-size:13px;color:var(--text-muted)">Start</label>
+                    <input type="date" id="mc-date-start" style="width:100%;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;color-scheme:dark">
+                </div>
+                <div style="flex:1">
+                    <label style="font-size:13px;color:var(--text-muted)">End</label>
+                    <input type="date" id="mc-date-end" style="width:100%;padding:8px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;outline:none;color-scheme:dark">
+                </div>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>Model</label>
+            <select id="mc-model" style="width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;outline:none;-webkit-appearance:none">
+                <option value="gbm" selected>GBM (constant vol, no jumps)</option>
+                <option value="merton">Merton jump-diffusion (fat tails)</option>
+            </select>
+        </div>
+        <button class="calc-btn" onclick="calcMonteCarlo()">Run 10,000 Simulations</button>
+        <div id="mc-result" class="result"></div>
+        <details>
+            <summary>Learn More</summary>
+            <div class="provenance">
+                <div class="formula">S(t+dt) = S(t) &times; exp((&mu; &minus; &sigma;&sup2;/2)&middot;dt + &sigma;&middot;&radic;dt&middot;Z)</div>
+                Metropolis, N. &amp; Ulam, S. (1949). &ldquo;The Monte Carlo Method.&rdquo;
+                <em>JASA</em>, 44(247): 335&ndash;341.
+                <br><br>
+                <strong>How it works:</strong> The C engine takes today&rsquo;s price and the
+                stock&rsquo;s historical return and volatility (computed from the loaded data).
+                It generates 10,000 random price paths over 252 trading days using Geometric
+                Brownian Motion &mdash; each path is one possible future year. Then it sorts
+                all 10,000 final prices and reads off the worst outcomes:
+                <ul style="margin:8px 0 8px 16px">
+                    <li><strong>95% VaR</strong> = the price at the 5th percentile (only 5% of paths ended worse)</li>
+                    <li><strong>99% VaR</strong> = the price at the 1st percentile (only 1% of paths ended worse)</li>
+                    <li><strong>Max Drawdown</strong> = the worst peak-to-trough drop across all paths</li>
+                </ul>
+                This is the same technique banks use for regulatory capital calculations,
+                running on your phone in native C via Axis2/C.
+                <br><br>
+                <strong>Volatility source:</strong> When you select a different ticker
+                as the volatility source, both its historical return <em>and</em>
+                volatility are used for the simulation. This is regime analysis:
+                &ldquo;what would this asset do in a world that behaves like
+                that market?&rdquo; A natural extension would be to decouple
+                return and volatility into independent inputs for pure stress
+                testing (e.g., AAPL&rsquo;s return with USDBRL&rsquo;s vol).
+                <br><br>
+                <strong>Sampling precision:</strong> With 10,000 simulations,
+                the 95th-percentile VaR has a standard error of roughly
+                &plusmn;1&ndash;2% of the reported value. Running 100,000 sims
+                would cut that by ~3&times;, but 10k is the standard
+                tradeoff for speed on mobile ARM (&lt;150ms in C).
+                <br><br>
+                <strong>Model assumptions:</strong> GBM assumes constant
+                volatility and continuous price paths (no jumps). Real markets
+                exhibit fat tails (leptokurtosis), volatility clustering, and
+                discontinuous moves &mdash; so GBM systematically understates
+                extreme tail risk. For better tail modeling, switch the Model
+                dropdown to Merton jump-diffusion (Merton, 1976): GBM plus a
+                compound Poisson jump process, drift-corrected so the expected
+                terminal value is unchanged. GARCH-filtered simulations would
+                be the next step. The native service architecture is pluggable:
+                each model is one function in the C engine, added without
+                changing the JS, Java bridge, or HTTP/2 transport.
+                <br><br>
+                <strong>See the math:</strong> The
+                <a href="https://github.com/apache/axis-axis2-c-core/blob/91cad92f1333b9169f7ba7c037668efeae4bd2c6/samples/user_guide/financial-benchmark-service/src/financial_benchmark_service.c#L1077-L1099" style="color:var(--accent)">
+                C source code (the simulation loop)</a> implements the GBM formula step by step &mdash;
+                you can follow the drift correction (&mu;&minus;&sigma;&sup2;/2),
+                the random walk (&sigma;&radic;dt&middot;Z), and the percentile
+                sort that produces the VaR numbers. The code reads like the
+                textbook equation even if you don&rsquo;t know C syntax.
+            </div>
+        </details>
+    </div>
+
+</div>
+
+<!-- Fund Tab -->
+<div id="tab-fund" class="tab-content">
+
+    <!-- Portfolio Metrics -->
+    <div class="card">
+        <h3>Portfolio Metrics</h3>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="metric-label">NAV</div>
+                <div id="fund-nav" class="metric-value">$0.00</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Return (annualised)</div>
+                <div id="fund-return" class="metric-value">0%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Max Drawdown</div>
+                <div id="fund-drawdown" class="metric-value">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Benchmark Metrics -->
+    <div id="fund-bench-metrics" class="card" style="display:none">
+        <h3>vs. Benchmark</h3>
+        <div class="metrics-grid">
+            <div class="metric">
+                <div class="metric-label">Excess Return (annualised)</div>
+                <div id="fund-excess" class="metric-value">0%</div>
+            </div>
+            <div class="metric">
+                <div class="metric-label">Information Ratio</div>
+                <div id="fund-ir" class="metric-value">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Position Table -->
+    <div class="card">
+        <h3>Positions</h3>
+        <div class="table-scroll">
+            <table class="fund-table">
+                <thead>
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Qty</th>
+                        <th class="right">Price</th>
+                        <th class="right">Value</th>
+                        <th class="right">Weight</th>
+                    </tr>
+                </thead>
+                <tbody id="fund-positions"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Cash & Settings -->
+    <div class="card">
+        <h3>Cash &amp; Settings</h3>
+        <div class="input-group">
+            <label>Cash ($)</label>
+            <input type="number" id="fund-cash-input" value="0" step="100" onchange="updateFund()">
+        </div>
+        <div class="toggle-row">
+            <label class="toggle-label">Exclude cash from NAV</label>
+            <input type="checkbox" id="fund-exclude-cash" onchange="updateFund()">
+        </div>
+        <div class="input-group" style="margin-top:12px">
+            <label>Benchmark</label>
+            <select id="fund-benchmark" class="ticker-select" onchange="updateFund()"></select>
+        </div>
+    </div>
+
+</div>
+
+<!-- Glossary Tab -->
+<div id="tab-glossary" class="tab-content">
+    <div class="card" style="margin-bottom:12px">
+        <input type="text" id="glossary-search" placeholder="Search terms..."
+               style="width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;outline:none;">
+    </div>
+    <div id="glossary-list"></div>
+</div>
+
+<script src="data.js"></script>
+<script src="calcs.js"></script>
+<script src="lib/chart.min.js"></script>
+<script src="charts.js"></script>
+<script src="provenance.js"></script>
+<script src="glossary.js"></script>
+<script src="fund.js"></script>
+<script src="scenario.js"></script>
+</body>
+</html>

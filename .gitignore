@@ -1,0 +1,55 @@
+# Market data you license yourself, and any script that fetches it with your
+# vendor credentials. Never commit either: the data is not ours to
+# redistribute. The app prefers sample_data/vendor_daily_closes.csv when a
+# local build has one (see data.js).
+scripts/fetch_vendor_data.*
+data/vendor_daily_closes.csv
+kanaha-calcs-app/app/src/main/assets/sample_data/vendor_daily_closes.csv
+
+# Private keys and certificates - NEVER commit these
+*.key
+*.pem
+*.p12
+*.pfx
+!*.pub
+
+# SSL/TLS certificates directory
+kanaha-calcs-app/app/src/main/assets/apache/ssl/
+
+# Release artifacts (upload to GitHub Releases instead)
+/release/
+
+# Regenerable source data. 23MB, fetched with scripts/fetch_sp500_data.py per
+# docs/DATA_FETCH_GUIDE.md, and not shipped in the APK — assets/sample_data
+# holds the bundled copies. The smaller data/*.csv files stay tracked because
+# they are the provenance record docs/DATA_PROVENANCE.md refers to.
+data/sp500_wiki_2008_2018.csv
+
+# Claude Code local config
+/.claude/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Gradle (handled by kanaha-calcs-app/.gitignore)
+local.properties
+
+# Demo and rehearsal scripts — kept outside every repo on purpose.
+#
+# The voice loop, its orchestrator prompt, the named books and the rehearsal
+# transcripts are operator material: they name files, phones and portfolios that
+# belong to a demonstration rather than to this project, and this repo is meant
+# to be published. They live in the operator's own working directory, and these
+# rules exist so that a stray copy in the tree cannot be staged by accident.
+kanaha-voice-*.py
+kanaha-books.json
+kanaha-*-prompt.md
+kanaha-mcp.generated.json
+kanaha-spec-replay.py
+transcripts.jsonl
+demo-local/

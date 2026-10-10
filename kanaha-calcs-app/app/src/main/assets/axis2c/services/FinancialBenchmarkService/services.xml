@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Kanaha Calcs — Financial Benchmark Service
+     Seven operations: portfolioVariance, composeCovariance,
+     covarianceFromReturns, monteCarlo, scenarioAnalysis, and this app's own
+     covarianceFromCsv and listCsvFiles, which read a CSV the phone holds.
+     All use pure JSON over HTTP (no SOAP). Each RESTLocation names one
+     operation, which is also what the engine allows the request body to name:
+     a body naming a different one is refused. -->
+<serviceGroup>
+    <service name="FinancialBenchmarkService">
+        <description>
+            Financial Benchmark Service — native C calculations for
+            portfolio variance (Markowitz 1952), Monte Carlo VaR
+            (Metropolis &amp; Ulam 1949), and scenario analysis
+            (Bernoulli 1738). Runs on localhost only.
+        </description>
+
+        <serviceClass>financial_benchmark_service</serviceClass>
+        <parameter name="ServiceClass">financial_benchmark_service</parameter>
+
+        <operation name="portfolioVariance">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/portfolioVariance</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+        <operation name="composeCovariance">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/composeCovariance</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+        <operation name="covarianceFromReturns">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/covarianceFromReturns</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+        <operation name="monteCarlo">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/monteCarlo</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+        <operation name="scenarioAnalysis">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/scenarioAnalysis</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+        <!-- This app's own: the CSV lives here, so the reading and the path
+             validation live here too (calcs_csv_source.c). -->
+        <operation name="covarianceFromCsv">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/covarianceFromCsv</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+        <operation name="listCsvFiles">
+            <messageReceiver class="axis2_json_rpc_msg_recv"/>
+            <parameter name="RESTMethod">POST</parameter>
+            <parameter name="RESTLocation">/listCsvFiles</parameter>
+            <parameter name="contentType">application/json</parameter>
+        </operation>
+
+    </service>
+</serviceGroup>

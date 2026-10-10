@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- mDNS/NSD advertisement (core Kanaha discovery feature). -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- specialUse, not dataSync: see the service below. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- No action bar: this app is one full-screen WebView, and from
+         targetSdk 35 on Android 15+ the content view spans the whole window,
+         so the action bar was drawn over the page's own header and its Load
+         CSV button, which could not be tapped at all. MainActivity pads the
+         WebView by the system bar insets instead. -->
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
+        android:extractNativeLibs="true"
+        android:networkSecurityConfig="@xml/network_security_config">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- exported=true enables headless "server mode": start via
+             am start-foreground-service -a org.kanaha.calcs.START_SERVER.
+             Modern Android blocks adb/other apps from starting a non-exported
+             service. onStartCommand only launches the local mTLS-gated server;
+             it processes no sensitive intent extras. -->
+        <!-- Foreground type specialUse, not dataSync. From Android 15, dataSync
+             services may run 6 hours in any 24; at the limit Android stops the
+             service (ForegroundServiceDidNotStopInTimeException) and refuses
+             to restart it ("Time limit already exhausted") until the app is
+             brought to the foreground. This service is a server that must stay
+             up for as long as the app is used, which is not a data sync, and
+             specialUse has no time limit. Do not change it back. -->
+        <service
+            android:name=".CalcsService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local HTTPS (mutual TLS) server answering calculation requests from devices on the same network" />
+        </service>
+
+    </application>
+
+</manifest>
