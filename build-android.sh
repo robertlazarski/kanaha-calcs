@@ -10,7 +10,7 @@
 #
 # Usage: cd $HOME/repos/kanaha-calcs && bash build-android.sh
 
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 NDK=$HOME/Android/Sdk/ndk/28.0.12916984
@@ -53,7 +53,9 @@ OUTPUT_DIR=$SCRIPT_DIR/kanaha-calcs-app/app/src/main/jniLibs/arm64-v8a
 # -O flag is given, which is how the engine shipped until 2026-09-19: the Monte
 # Carlo loops (and now the correlated book's O(n_assets^2) inner product) ran
 # unoptimized on the phone. kanaha-audio's build has used -O2 all along.
-OPT="-O2"
+# The prefix maps keep this machine's paths out of __FILE__ in the binaries:
+# sources compile as kanaha-calcs-app/... and axis2c-src-<ref>/... instead.
+OPT="-O2 -ffile-prefix-map=$SCRIPT_DIR/= -ffile-prefix-map=$DEPS_WORK/="
 
 echo "=== kanaha-calcs: Building FinancialBenchmarkService for Android arm64-v8a ==="
 
