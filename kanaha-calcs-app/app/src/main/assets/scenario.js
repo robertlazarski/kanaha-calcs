@@ -18,8 +18,14 @@ function callAxis2(path, payload) {
             // Replace with null before parsing.
             response = response.replace(/\bNaN\b/g, 'null').replace(/\bInfinity\b/g, 'null');
             var data = JSON.parse(response);
+            // Three failure shapes: the bridge's {"error": "..."}, the
+            // engine's {"error": {"message": ...}}, and the service's
+            // {"status": "FAILED", "error_message": ...}. A card that read a
+            // FAILED reply as data would show a blank result, not the reason.
             if (data.error) {
-                reject(new Error(data.error));
+                reject(new Error(data.error.message || data.error));
+            } else if (data.status === 'FAILED') {
+                reject(new Error(data.error_message || 'the service reported FAILED'));
             } else {
                 resolve(data);
             }
@@ -66,17 +72,19 @@ function updateScenarioCurrentPrice() {
     var ticker = document.getElementById('scenario-ticker').value;
     var prices = appData.adjClose[ticker];
     if (prices && prices.length > 0) {
-        document.getElementById('scenario-current-price').value =
-            prices[prices.length - 1].toFixed(2);
+        var price = prices[prices.length - 1];
+        document.getElementById('scenario-current-price').value = price.toFixed(2);
+        document.querySelectorAll('.scenario-value[data-mult]').forEach(function(el) {
+            el.value = (price * parseFloat(el.dataset.mult)).toFixed(2);
+        });
     }
 }
 
 /*
  * Compute scenario expected value via Axis2/C native service.
  * No JS fallback by design: the whole point of these Axis2/C calcs is to
- * validate the native binary pipeline (cross-compile, deploy, IPC). If the
- * service isn't running, the .catch() tells the user to deploy Phase 5.
- * fetch() works here (unlike file:// in data.js) because this is HTTP to localhost.
+ * validate the native binary pipeline (cross-compile, deploy, IPC). A failed
+ * call shows the service's own reason.
  */
 function calcScenario() {
     var labels = document.querySelectorAll('.scenario-label');
@@ -131,12 +139,8 @@ function calcScenario() {
 
     callAxis2('/scenarioAnalysis', payload)
     .then(function(data) {
-        /* Use != null (not ||) because expected_return can be 0 or negative,
-         * and JS || treats those as falsy, silently falling through. */
-        var ev = (data.expected_return != null) ? data.expected_return
-               : (data.expected_value != null) ? data.expected_value
-               : data.weighted_value;
-        showScenarioResult(ev, data.calc_time_us);
+        showScenarioResult(data.weighted_value, data.expected_return,
+                           currentPrice, data.calc_time_us);
     })
     .catch(function(e) {
         resultEl.textContent = 'Native service error: ' + e.message;
@@ -145,11 +149,21 @@ function calcScenario() {
     });
 }
 
-/** Display scenario result. */
-function showScenarioResult(ev, calcTimeUs) {
+/**
+ * Display the expected value in dollars, as the card's formula defines it,
+ * with the expected return against the current price beside it.
+ */
+function showScenarioResult(ev, expectedReturn, currentPrice, calcTimeUs) {
     var el = document.getElementById('scenario-result');
-    el.textContent = formatResult(ev);
-    el.className = 'result ' + (ev >= 0 ? 'positive' : 'negative');
+    if (!isFinite(ev) || !isFinite(expectedReturn)) {
+        el.textContent = '—';
+        el.className = 'result';
+        return;
+    }
+    el.textContent = 'EV $' + ev.toFixed(2) + ' (' +
+        (expectedReturn >= 0 ? '+' : '') + (expectedReturn * 100).toFixed(1) +
+        '% vs $' + currentPrice.toFixed(2) + ')';
+    el.className = 'result ' + (expectedReturn >= 0 ? 'positive' : 'negative');
     el.style.fontSize = '';
     var info = document.getElementById('scenario-info');
     info.textContent = 'Axis2/C' + (calcTimeUs ? ' (' + calcTimeUs + ' μs)' : '');
@@ -260,8 +274,8 @@ function calcPortfolioVariance() {
                 show(data.portfolio_variance || data.variance || 0, data.calc_time_us,
                      'matrix computed in JavaScript');
             })
-            .catch(function() {
-                fail('Native service not available. Deploy Axis2/C binary (Phase 5).');
+            .catch(function(e) {
+                fail('Native service error: ' + e.message);
             });
     }
 
@@ -563,8 +577,8 @@ function calcMonteCarlo() {
             resultEl.textContent = lines.join('\n');
             resultEl.className = 'result positive';
         })
-        .catch(function() {
-            resultEl.textContent = 'Native service not available. Deploy Axis2/C binary (Phase 5).';
+        .catch(function(e) {
+            resultEl.textContent = 'Native service error: ' + e.message;
             resultEl.className = 'result negative';
             resultEl.style.fontSize = '13px';
         });
@@ -574,18 +588,23 @@ function calcMonteCarlo() {
 document.addEventListener('DOMContentLoaded', function() {
     var tbody = document.getElementById('scenario-rows');
     if (!tbody) return;
+    // Values are multiples of the current price, so the defaults stay
+    // plausible whichever ticker is picked; updateScenarioCurrentPrice
+    // rescales them until the user types over one.
     var defaults = [
-        { label: 'Bull', prob: 25, value: 150 },
-        { label: 'Base', prob: 50, value: 100 },
-        { label: 'Bear', prob: 25, value: 60 }
+        { label: 'Bull', prob: 25, mult: 1.3 },
+        { label: 'Base', prob: 50, mult: 1.05 },
+        { label: 'Bear', prob: 25, mult: 0.7 }
     ];
+    var price = parseFloat(document.getElementById('scenario-current-price').value) || 100;
     for (var i = 0; i < defaults.length; i++) {
         var d = defaults[i];
         var tr = document.createElement('tr');
         tr.innerHTML =
             '<td><input type="text" class="scenario-label" maxlength="32" value="' + d.label + '" style="width:80px"></td>' +
             '<td><input type="number" class="scenario-prob" step="1" min="0" max="100" value="' + d.prob + '" style="width:60px" onchange="validateScenarioProbs()">%</td>' +
-            '<td><input type="number" class="scenario-value" step="0.01" value="' + d.value + '" style="width:80px"></td>' +
+            '<td><input type="number" class="scenario-value" step="0.01" value="' + (price * d.mult).toFixed(2) +
+                '" data-mult="' + d.mult + '" oninput="delete this.dataset.mult" style="width:80px"></td>' +
             '<td><button class="remove-row-btn" onclick="this.closest(\'tr\').remove();validateScenarioProbs()">×</button></td>';
         tbody.appendChild(tr);
     }
