@@ -66,8 +66,9 @@ optional parameters:
 - **covarianceFromCsv**: `column_kind` (`price`, the default, takes log
   returns between rows; `return` uses the values as they are),
   `n_periods_per_year`, `max_obs` (newest rows first, default and max 5000),
-  `check_positive_definite`, `asset_ids` (labels for the columns),
-  `request_id`. `file` must be one plain name from `listCsvFiles`: no
+  `check_positive_definite` (a boolean), `asset_ids` (one non-empty label per
+  column, same length as `columns`), `request_id`. A field of the wrong type
+  or length is refused, not defaulted. `file` must be one plain name from `listCsvFiles`: no
   separators, no `..`, ending in `.csv`. Imported CSVs land in the app's
   `files/csv` when the user picks one; nothing else is readable.
 - **monteCarlo**: `n_simulations` (max 1,000,000; default 10,000), `n_periods`

@@ -248,7 +248,7 @@ kanaha_calcs_csv_covariance_json(
     const axutil_env_t *env,
     const axis2_char_t *args_json)
 {
-    json_object *args = NULL, *v = NULL, *cols = NULL;
+    json_object *args = NULL, *v = NULL, *cols = NULL, *ids = NULL;
     csv_selection_t sel;
     const char *file = NULL, *kind = "price";
     char path[768];
@@ -382,7 +382,49 @@ kanaha_calcs_csv_covariance_json(
         return r;
     }
     if (json_object_object_get_ex(args, "check_positive_definite", &v)) {
+        if (!json_object_is_type(v, json_type_boolean)) {
+            selection_free(env, &sel);
+            json_object_put(args);
+            return csv_fail(env, "\"check_positive_definite\" must be true or false; "
+                                 "omit it for true.");
+        }
         check_pd = json_object_get_boolean(v) ? AXIS2_TRUE : AXIS2_FALSE;
+    }
+    if (json_object_object_get_ex(args, "request_id", &v) &&
+        !json_object_is_type(v, json_type_string)) {
+        selection_free(env, &sel);
+        json_object_put(args);
+        return csv_fail(env, "\"request_id\" must be a string.");
+    }
+    /* asset_ids, when present, is one label per column: a list that does not
+     * line up would attach labels to the wrong columns. */
+    if (json_object_object_get_ex(args, "asset_ids", &ids)) {
+        int n_ids;
+        if (!json_object_is_type(ids, json_type_array)) {
+            selection_free(env, &sel);
+            json_object_put(args);
+            return csv_fail(env, "\"asset_ids\" must be an array of strings, one per column; "
+                                 "omit it to use the column names.");
+        }
+        n_ids = (int)json_object_array_length(ids);
+        if (n_ids != sel.n_cols) {
+            axis2_char_t *r = csv_fail(env,
+                "\"asset_ids\" has %d labels but \"columns\" has %d; give one per column "
+                "or omit it.", n_ids, sel.n_cols);
+            selection_free(env, &sel);
+            json_object_put(args);
+            return r;
+        }
+        for (i = 0; i < n_ids; i++) {
+            json_object *c = json_object_array_get_idx(ids, i);
+            if (!c || !json_object_is_type(c, json_type_string) ||
+                json_object_get_string(c)[0] == '\0') {
+                axis2_char_t *r = csv_fail(env, "asset_ids[%d] must be a non-empty string.", i);
+                selection_free(env, &sel);
+                json_object_put(args);
+                return r;
+            }
+        }
     }
 
     /* --- open and size-check --- */
@@ -616,27 +658,17 @@ kanaha_calcs_csv_covariance_json(
     AXIS2_FREE(env->allocator, values);
     values = NULL;
 
-    /* asset_ids: the caller's labels, or the column names */
+    /* asset_ids: the caller's labels (validated above), or the column names */
     req->asset_ids = AXIS2_MALLOC(env->allocator, (size_t)sel.n_cols * sizeof(char *));
     if (req->asset_ids) {
-        json_object *ids = NULL;
-        axis2_bool_t have_ids =
-            (json_object_object_get_ex(args, "asset_ids", &ids) &&
-             json_object_is_type(ids, json_type_array) &&
-             (int)json_object_array_length(ids) == sel.n_cols) ? AXIS2_TRUE : AXIS2_FALSE;
         for (i = 0; i < sel.n_cols; i++) {
-            const char *label = sel.names[i];
-            if (have_ids) {
-                json_object *c = json_object_array_get_idx(ids, i);
-                if (c && json_object_is_type(c, json_type_string)) {
-                    label = json_object_get_string(c);
-                }
-            }
+            const char *label = ids
+                ? json_object_get_string(json_object_array_get_idx(ids, i))
+                : sel.names[i];
             req->asset_ids[i] = axutil_strdup(env, label);
         }
     }
-    if (json_object_object_get_ex(args, "request_id", &v) &&
-        json_object_is_type(v, json_type_string)) {
+    if (json_object_object_get_ex(args, "request_id", &v)) {
         req->request_id = axutil_strdup(env, json_object_get_string(v));
     }
 
@@ -787,7 +819,8 @@ static const char SCHEMA_COVARIANCE_FROM_CSV[] =
     "\"properties\":{"
         "\"file\":{\"type\":\"string\","
             "\"description\":\"CSV file name on the device, exactly as listCsvFiles reports it\"},"
-        "\"columns\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},"
+        "\"columns\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"minLength\":1},"
+            "\"minItems\":1,\"maxItems\":50,"
             "\"description\":\"Header names to use, one per asset (max 50). listCsvFiles reports "
                 "each file's columns\"},"
         "\"column_kind\":{\"type\":\"string\",\"enum\":[\"price\",\"return\"],"
@@ -796,13 +829,17 @@ static const char SCHEMA_COVARIANCE_FROM_CSV[] =
         "\"n_periods_per_year\":{\"type\":\"number\","
             "\"description\":\"Annualization factor, 252 by default (daily). 12 for monthly, "
                 "1 to keep the file's own basis\"},"
-        "\"max_obs\":{\"type\":\"integer\","
+        "\"max_obs\":{\"type\":\"integer\",\"minimum\":2,\"maximum\":5000,"
             "\"description\":\"Use at most this many observations, counted from the newest row. "
                 "Default and maximum 5000\"},"
         "\"check_positive_definite\":{\"type\":\"boolean\","
-            "\"description\":\"Cholesky check on the result. Default true\"},"
-        "\"asset_ids\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},"
-            "\"description\":\"Optional labels, one per column; the column names by default\"},"
+            "\"description\":\"Cholesky check on the result: true or false, default true. "
+                "Any other value is refused\"},"
+        "\"asset_ids\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"minLength\":1},"
+            "\"minItems\":1,\"maxItems\":50,"
+            "\"description\":\"Optional labels, one non-empty string per column: the length must "
+                "equal the length of columns, or the request is refused. The column names by "
+                "default\"},"
         "\"request_id\":{\"type\":\"string\"}"
     "},"
     "\"required\":[\"file\",\"columns\"]"
