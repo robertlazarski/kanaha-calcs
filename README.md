@@ -30,7 +30,8 @@ Kanaha Calcs is an educational tool. It teaches the vocabulary and the math of p
 ## Example
 
 ```bash
-curl -s --http2 --cert client.crt --key client.key --cacert ca.crt \
+C="${KANAHA_CERT_DIR:-$HOME/kanaha-ca}"
+curl -s --http2 --cert "$C/client.crt" --key "$C/client.key" --cacert "$C/ca.crt" \
   -H "Content-Type: application/json" \
   -d '{"n_assets": 2, "weights": [0.6, 0.4], "covariance_matrix": [0.04, 0.006, 0.006, 0.09]}' \
   "https://$PHONE:8444/services/FinancialBenchmarkService/portfolioVariance"
@@ -39,6 +40,8 @@ curl -s --http2 --cert client.crt --key client.key --cacert ca.crt \
 ```json
 {"status": "SUCCESS", "portfolio_variance": 0.03168, "portfolio_volatility": 0.17799, ...}
 ```
+
+Certificates live in `$KANAHA_CERT_DIR` (default `~/kanaha-ca`), holding `client.crt`, `client.key` and `ca.crt` (or `operator.crt`, `operator.key` and `kanaha-ca.crt`), the same directory `tools/kanaha-discover.sh` uses. Connect by an address in the phone's certificate, without `-k`.
 
 `covariance_matrix` is the row-major `n_assets × n_assets` matrix, already annualized. [MCP.md](docs/MCP.md) documents every operation's parameters.
 
